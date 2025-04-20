@@ -3,7 +3,7 @@ import sys
 from PySide6.QtWidgets import (
     QApplication
 )
-from turing_machine.gui.main_window import MainWindow
+from gui.main_window import MainWindow
 
 
 if __name__ == '__main__':

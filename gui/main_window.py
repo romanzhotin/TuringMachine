@@ -1,13 +1,17 @@
-from PySide6.QtCore import Slot
+import platform
+
+
+from pathlib import Path
+from PySide6.QtCore import QFile, Slot
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QVBoxLayout,
     QWidget
 )
-from turing_machine.gui.dialogs.about_dialog import AboutDialog
-from turing_machine.gui.menu.menu import MainAppMenuBar
-from turing_machine.gui.widgets.tape_widget import TapeWidget
+from gui.dialogs.about_dialog import AboutDialog
+from gui.menu.menu import MainAppMenuBar
+from gui.widgets.tape_widget import TapeWidget
 
 
 class MainWindow(QMainWindow):
@@ -47,31 +51,18 @@ class MainWindow(QMainWindow):
         self.menu_bar.about_dialog_requested.connect(self.show_about_dialog)
 
     def _apply_styles(self):
-        bg_color = '#ffffff'
-        self.setStyleSheet(f"""
-                    QDialog {{
-                        background-color: {bg_color};
-                    }}
-                    QMainWindow {{
-                        background-color: {bg_color};
-                    }}
-                    QMenuBar {{
-                        background-color: {bg_color};
-                    }}
-                    QMenu {{
-                        background-color: {bg_color};
-                        border: 1px solid #dcdcdc;
-                    }}
-                    QMenu::item {{
-                        padding: 5px 20px;
-                        background-color: {bg_color};
-                        border: 1px solid {bg_color};
-                    }}
-                    QMenu::item:selected {{
-                        background-color: #cce8ff;
-                        border: 1px solid #99d1ff
-                    }}
-                """)
+        current_file = Path(__file__).resolve()
+        project_root = current_file.parent.parent
+        os_name = platform.system().lower()
+        if os_name == 'linux':
+            style_path = project_root / 'styles' / 'light_linux.qss'
+            with open(style_path, 'r') as file:
+                style = file.read()
+        elif os_name == 'windows':
+            style_path = project_root / 'styles' / 'light_windows.qss'
+            with open(style_path, 'r') as file:
+                style = file.read()
+        self.setStyleSheet(style)
 
     @Slot()
     def new_file(self):
