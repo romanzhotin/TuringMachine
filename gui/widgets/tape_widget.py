@@ -1,153 +1,135 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QVBoxLayout,
-    QWidget
+    QWidget,
+    QSizePolicy
 )
+from core.tape import TuringTape, Direction
 
 
-class TapeCell(QWidget):
-    def __init__(self, symbol=' ', position=0, current=False):
-        super().__init__()
-        self.current = current
-        self.position = position
-        self.editor = None
+class Cell(QLineEdit):
+    def __init__(self, idx, tape_widget):
+        super().__init__(tape_widget.tape.blank)
+        self.idx = idx
+        self.tape_widget = tape_widget
+        self.setMaxLength(1)
+        self.setFixedSize(tape_widget.cell_size, tape_widget.cell_size)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
-
-        self.index_label = QLabel(str(position))
-        self.index_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.index_label.setStyleSheet('font: 12px Arial; color: #000000; font-weight: 500;')
-        self.index_label.setFixedHeight(18)
-
-        self.symbol_label = QLabel(str(symbol))
-        self.symbol_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.symbol_label.setFixedSize(40, 40)
-
-        self.layout.addWidget(self.index_label)
-        self.layout.addWidget(self.symbol_label)
-        self.setLayout(self.layout)
-        self.update_style()
-        self.setFixedHeight(59)
-
-    def update_style(self):
-        style = f"""
-            font: 20px Arial;
-            background: #f0f0f0;
-            margin: 0px;
-            padding: 0px;
-            border: {'1px solid #000000' if self.current else 'none'};
-            box-sizing: border-box;
-        """
-        self.symbol_label.setStyleSheet(style)
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and self.editor is None:
-            self.start_editing()
-        super().mousePressEvent(event)
-
-    def start_editing(self):
-        self.editor = QLineEdit(self)
-        current_text = self.symbol_label.text()
-        self.editor.setText('' if current_text == ' ' else current_text)
-        self.editor.setMaxLength(1)
-        self.editor.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.editor.setGeometry(self.symbol_label.geometry())
-        self.editor.setFont(self.symbol_label.font())
-
-        self.editor.setStyleSheet(self.symbol_label.styleSheet())
-        self.editor.setFocus()
-        self.editor.selectAll()
-
-        self.editor.editingFinished.connect(self.finish_edit)
-        self.editor.show()
-
-    def finish_edit(self):
-        new_text = self.editor.text()
-        if not new_text:
-            new_text = ' '
+    def keyPressEvent(self, event):
+        key = event.text()
+        if key == ' ' and not event.modifiers():  # Если нажали пробел, вставляем '_'
+            key = '_'
+        if key and not event.modifiers():
+            pos = self.tape_widget.tape.head - self.tape_widget.window + self.idx
+            self.tape_widget.tape.tape[pos] = key
+            self.setText(key)
         else:
-            new_text = new_text[0]
-        self.symbol_label.setText(new_text)
-        self.editor.deleteLater()
-        self.editor = None
+            super().keyPressEvent(event)
 
 
 class TapeWidget(QWidget):
-    def __init__(self, visible_cell_count=13):
+    def __init__(self, tape: TuringTape, window_size: int = 10, cell_size: int = 30):
         super().__init__()
-        self.visible_cell_count = visible_cell_count
-        self.half_visible = visible_cell_count // 2
-        self.current_position = 0
-        self.cells = {}
+        self.tape = tape
+        self.window = window_size
+        self.cell_size = cell_size
+        self.index_labels = []
+        self.cells = []
+        self._setup_ui()
+        self.setFixedSize(QSize(self.calculate_fixed_size()[0], self.calculate_fixed_size()[1]))
 
-        self.move_left_btn = QPushButton('←')
-        self.move_right_btn = QPushButton('→')
+    def _setup_ui(self):
+        main_layout = QVBoxLayout(self)
 
-        # Оригинальный стиль кнопок
-        for btn in [self.move_left_btn, self.move_right_btn]:
-            btn.setFixedSize(40, 58)
-            btn.setStyleSheet("font: 20px Arial; padding-bottom: 5px;")
+        index_layout = QHBoxLayout()
+        index_layout.setSpacing(0)
+        for idx in range(2 * self.window + 1):
+            lbl = QLabel("")
+            lbl.setFixedSize(self.cell_size, self.cell_size // 2)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            index_layout.addWidget(lbl)
+            self.index_labels.append(lbl)
+        main_layout.addLayout(index_layout)
 
-        self.move_left_btn.clicked.connect(self.move_left)
-        self.move_right_btn.clicked.connect(self.move_right)
+        tape_layout = QHBoxLayout()
+        tape_layout.setSpacing(0)
+        for idx in range(2 * self.window + 1):
+            cell = Cell(idx, self)
+            tape_layout.addWidget(cell)
+            self.cells.append(cell)
+        main_layout.addLayout(tape_layout)
 
-        self.inner_layout = QHBoxLayout()
-        self.inner_layout.setContentsMargins(0, 0, 0, 0)
-        self.inner_layout.setSpacing(1)
-        self.inner_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        btn_layout = QHBoxLayout()
+        btn_left = QPushButton("<-")
+        btn_right = QPushButton("->")
+        btn_left.setFixedSize(self.cell_size * self.window, self.cell_size)
+        btn_right.setFixedSize(self.cell_size * self.window, self.cell_size)
+        btn_left.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        btn_right.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        btn_left.clicked.connect(self.move_left)
+        btn_right.clicked.connect(self.move_right)
+        btn_layout.addWidget(btn_left)
+        btn_layout.addWidget(btn_right)
+        btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.addLayout(btn_layout)
 
-        self.outer_layout = QHBoxLayout()
-        self.outer_layout.setContentsMargins(10, 0, 10, 0)
-        self.outer_layout.setSpacing(10)
-        self.outer_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.outer_layout.addWidget(self.move_left_btn)
-        self.outer_layout.addLayout(self.inner_layout)
-        self.outer_layout.addWidget(self.move_right_btn)
+        self.update_view()
 
-        self.setLayout(self.outer_layout)
-        self.setMinimumHeight(58)
+    def calculate_fixed_size(self):
+        width = (2 * self.window + 1) * self.cell_size
+        height = self.cell_size + self.cell_size // 2 + self.cell_size * 2  # Лента + кнопки
+        return width, height
 
-        self.update_tape()
+    def update_view(self):
+        start = self.tape.head - self.window
+        for idx, lbl in enumerate(self.index_labels):
+            pos = start + idx
+            lbl.setText(str(pos))
 
-    def get_cell(self, position):
-        if position not in self.cells:
-            self.cells[position] = TapeCell(position=position)
-        return self.cells[position]
-
-    def update_tape(self):
-        while self.inner_layout.count():
-            item = self.inner_layout.takeAt(0)
-            if item.widget():
-                item.widget().setParent(None)
-
-        start = self.current_position - self.half_visible
-        end = self.current_position + self.half_visible
-
-        for pos in range(start, end + 1):
-            cell = self.get_cell(pos)
-            cell.current = (pos == self.current_position)
-            cell.index_label.setText(str(pos))
-            cell.update_style()
-            self.inner_layout.addWidget(cell)
+        for idx, cell in enumerate(self.cells):
+            pos = start + idx
+            cell.blockSignals(True)
+            cell.setText(self.tape.tape[pos])
+            cell.blockSignals(False)
+            if pos == self.tape.head:
+                cell.setStyleSheet(
+                    "border:2px solid red; background-color: orange; font-size: 20px;"
+                )
+            else:
+                cell.setStyleSheet(
+                    "border:1px solid black; font-size: 20px;"
+                )
 
     def move_left(self):
-        self.current_position -= 1
-        self.update_tape()
+        self.tape.move(Direction.LEFT)
+        self.update_view()
 
     def move_right(self):
-        self.current_position += 1
-        self.update_tape()
+        self.tape.move(Direction.RIGHT)
+        self.update_view()
 
-    def write(self, symbol):
-        if self.current_position in self.cells:
-            self.cells[self.current_position].symbol_label.setText(str(symbol))
 
-    def read(self):
-        return self.cells[self.current_position].symbol_label.text() if self.current_position in self.cells else ' '
+if __name__ == '__main__':
+    import sys
+
+    from PySide6.QtWidgets import QApplication, QMainWindow
+
+
+    class MainWindow(QMainWindow):
+        def __init__(self):
+            super().__init__()
+            self.setWindowTitle("Turing Tape Editor with Indices")
+            self.tape = TuringTape("1011_001")
+            self.tape_widget = TapeWidget(self.tape, window_size=5, cell_size=40)
+            self.setCentralWidget(self.tape_widget)
+
+    app = QApplication(sys.argv)
+    win = MainWindow()
+    win.show()
+    sys.exit(app.exec())

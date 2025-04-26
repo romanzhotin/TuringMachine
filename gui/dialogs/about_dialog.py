@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import (
     QDialog,
     QLabel,
-    QLayout,
     QPushButton,
     QVBoxLayout
 )
@@ -11,6 +10,7 @@ class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("О программе")
+        self.setFixedSize(400, 400)
         self._setup_ui()
 
     def _setup_ui(self):
@@ -27,5 +27,3 @@ class AboutDialog(QDialog):
         close_btn = QPushButton("Закрыть")
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
-
-        self.layout().setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)

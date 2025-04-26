@@ -1,8 +1,7 @@
 import platform
 
-
 from pathlib import Path
-from PySide6.QtCore import QFile, Slot
+from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -12,6 +11,7 @@ from PySide6.QtWidgets import (
 from gui.dialogs.about_dialog import AboutDialog
 from gui.menu.menu import MainAppMenuBar
 from gui.widgets.tape_widget import TapeWidget
+from core.tape import TuringTape
 
 
 class MainWindow(QMainWindow):
@@ -28,7 +28,9 @@ class MainWindow(QMainWindow):
 
         self.statusBar().showMessage('')
 
-        self.tape_widget = TapeWidget(visible_cell_count=27)
+        tape = TuringTape()
+        self.tape_widget = TapeWidget(tape=tape, window_size=10, cell_size=50)
+
         central = QWidget()
         layout = QVBoxLayout()
         layout.addWidget(self.tape_widget)
@@ -55,11 +57,11 @@ class MainWindow(QMainWindow):
         project_root = current_file.parent.parent
         os_name = platform.system().lower()
         if os_name == 'linux':
-            style_path = project_root / 'styles' / 'light_linux.qss'
+            style_path = project_root / 'styles' / 'light' / 'linux.qss'
             with open(style_path, 'r') as file:
                 style = file.read()
         elif os_name == 'windows':
-            style_path = project_root / 'styles' / 'light_windows.qss'
+            style_path = project_root / 'styles' / 'light' / 'windows.qss'
             with open(style_path, 'r') as file:
                 style = file.read()
         self.setStyleSheet(style)
@@ -95,4 +97,4 @@ class MainWindow(QMainWindow):
     @Slot()
     def show_about_dialog(self):
         dialog = AboutDialog(self)
-        dialog.exec()
+        dialog.show()
