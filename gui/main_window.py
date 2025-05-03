@@ -21,7 +21,7 @@ from gui.widgets.tape_widget import TapeWidget
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Машина Тьюринга')
+        self.setWindowTitle("Машина Тьюринга")
         self.setFocus()
         self._setup_ui()
         self._connect_menu_signals()
@@ -33,8 +33,13 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage('')
 
         tape = TuringTape()
-        self.tape_widget = TapeWidget(tape=tape, window_size=10, cell_size=50)
-        self.alphabet_widget = AlphabetWidget(width=self.tape_widget.calculate_fixed_size()[0])
+        self.alphabet_widget = AlphabetWidget(width=1050)
+        self.tape_widget = TapeWidget(
+            tape=tape,
+            alphabet_widget=self.alphabet_widget,
+            window_size=10,
+            cell_size=50
+        )
         self.notes_widget = NotesWidget()
 
         central = QWidget()
@@ -54,6 +59,8 @@ class MainWindow(QMainWindow):
         central.setLayout(layout_3)
         self.setCentralWidget(central)
 
+        self.tape_widget.error_message.connect(self.statusBar().showMessage)
+
     def _connect_menu_signals(self):
         # file_menu
         self.menu_bar.new_requested.connect(self.new_file)
@@ -65,7 +72,7 @@ class MainWindow(QMainWindow):
         # run_menu
         self.menu_bar.run_requested.connect(self.run_program)
 
-        # opstions_menu
+        # options_menu
         self.menu_bar.options_dialog_requested.connect(self.show_options_dialog)
 
         # help_menu
@@ -76,15 +83,17 @@ class MainWindow(QMainWindow):
         current_file = Path(__file__).resolve()
         project_root = current_file.parent.parent
         os_name = platform.system().lower()
+
         if os_name == 'linux':
             style_path = project_root / 'styles' / 'light' / 'linux.qss'
-            with open(style_path, 'r') as file:
-                style = file.read()
         elif os_name == 'windows':
             style_path = project_root / 'styles' / 'light' / 'windows.qss'
-            with open(style_path, 'r') as file:
-                style = file.read()
-        self.setStyleSheet(style)
+        else:
+            return
+
+        with open(style_path, 'r', encoding='utf-8') as file:
+            style = file.read()
+            self.setStyleSheet(style)
 
     @Slot()
     def new_file(self):

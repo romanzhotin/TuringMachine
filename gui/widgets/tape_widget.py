@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -22,9 +22,15 @@ class Cell(QLineEdit):
 
     def keyPressEvent(self, event):
         key = event.text()
-        if key == ' ' and not event.modifiers():
-            key = self.tape_widget.tape.blank
+        # if key == ' ' and not event.modifiers():
+        #     key = self.tape_widget.tape.blank
         if key and not event.modifiers():
+            alphabet = self.tape_widget.alphabet_widget.get_alphabet()
+            if key not in alphabet:
+                self.tape_widget.error_message.emit(f"Символ '{key}' не входит в алфавит")
+                event.ignore()
+                return
+
             pos = self.tape_widget.tape.head - self.tape_widget.window + self.idx
             if pos == self.tape_widget.tape.head:
                 self.tape_widget.tape.write(key)
@@ -35,9 +41,12 @@ class Cell(QLineEdit):
 
 
 class TapeWidget(QWidget):
-    def __init__(self, tape: TuringTape, window_size: int = 10, cell_size: int = 30):
+    error_message = Signal(str)
+
+    def __init__(self, tape: TuringTape, alphabet_widget, window_size: int = 10, cell_size: int = 30):
         super().__init__()
         self.tape = tape
+        self.alphabet_widget = alphabet_widget
         self.tape.add_observer(self)
         self.window = window_size
         self.cell_size = cell_size
@@ -103,7 +112,7 @@ class TapeWidget(QWidget):
             cell.setText(symbol)
             cell.blockSignals(False)
             if pos == self.tape.head:
-                cell.setStyleSheet("border:2px solid red; background-color: orange; font-size: 20px;")
+                cell.setStyleSheet("border:2px solid #ff6666; background-color: #ff9999; font-size: 20px;")
             else:
                 cell.setStyleSheet("border:1px solid black; font-size: 20px;")
 

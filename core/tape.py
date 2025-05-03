@@ -8,7 +8,7 @@ class Direction(Enum):
 
 
 class TuringTape:
-    def __init__(self, input_str: str = "", blank_symbol: str = "_"):
+    def __init__(self, input_str: str = "", blank_symbol: str = " "):
         self.blank = blank_symbol
         self.tape = {}
         for i, ch in enumerate(input_str):

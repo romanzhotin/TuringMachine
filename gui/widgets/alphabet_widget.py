@@ -28,10 +28,10 @@ class AlphabetWidget(QWidget):
         self.input_field.editingFinished.connect(self._process_input)
 
     def _process_input(self):
-        text = sorted(list(set(self.input_field.text())))
+        text = sorted(list(set(self.input_field.text().replace(' ', ''))))
         res = ''.join(text)
         self.input_field.setText(res)
         self.text_processed.emit(res)
 
     def get_alphabet(self):
-        return sorted(list(set(self.input_field.text())))
+        return sorted(list(set(self.input_field.text()))) + [' ']
