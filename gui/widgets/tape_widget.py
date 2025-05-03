@@ -22,12 +22,14 @@ class Cell(QLineEdit):
 
     def keyPressEvent(self, event):
         key = event.text()
-        if key == ' ' and not event.modifiers():  # Если нажали пробел, вставляем '_'
-            key = '_'
+        if key == ' ' and not event.modifiers():
+            key = self.tape_widget.tape.blank
         if key and not event.modifiers():
             pos = self.tape_widget.tape.head - self.tape_widget.window + self.idx
-            self.tape_widget.tape.tape[pos] = key
-            self.setText(key)
+            if pos == self.tape_widget.tape.head:
+                self.tape_widget.tape.write(key)
+            else:
+                self.tape_widget.tape.set_symbol(pos, key)
         else:
             super().keyPressEvent(event)
 
@@ -36,19 +38,24 @@ class TapeWidget(QWidget):
     def __init__(self, tape: TuringTape, window_size: int = 10, cell_size: int = 30):
         super().__init__()
         self.tape = tape
+        self.tape.add_observer(self)
         self.window = window_size
         self.cell_size = cell_size
         self.index_labels = []
         self.cells = []
         self._setup_ui()
-        self.setFixedSize(QSize(self.calculate_fixed_size()[0], self.calculate_fixed_size()[1]))
+        w, h = self.calculate_fixed_size()
+        self.setFixedSize(QSize(w, h))
+
+    def on_tape_changed(self):
+        self.update_view()
 
     def _setup_ui(self):
         main_layout = QVBoxLayout(self)
 
         index_layout = QHBoxLayout()
         index_layout.setSpacing(0)
-        for idx in range(2 * self.window + 1):
+        for _ in range(2 * self.window + 1):
             lbl = QLabel("")
             lbl.setFixedSize(self.cell_size, self.cell_size // 2)
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -70,41 +77,35 @@ class TapeWidget(QWidget):
         btn_right = QPushButton("->")
         btn_left.setFixedSize(self.cell_size * self.window, self.cell_size)
         btn_right.setFixedSize(self.cell_size * self.window, self.cell_size)
-        btn_left.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        btn_right.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         btn_left.clicked.connect(self.move_left)
         btn_right.clicked.connect(self.move_right)
         btn_layout.addWidget(btn_left)
         btn_layout.addWidget(btn_right)
-        btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addLayout(btn_layout)
 
         self.update_view()
 
     def calculate_fixed_size(self):
         width = (2 * self.window + 1) * self.cell_size
-        height = self.cell_size + self.cell_size // 2 + self.cell_size * 2  # Лента + кнопки
+        height = self.cell_size + self.cell_size // 2 + self.cell_size * 2
         return width, height
 
     def update_view(self):
         start = self.tape.head - self.window
+
         for idx, lbl in enumerate(self.index_labels):
-            pos = start + idx
-            lbl.setText(str(pos))
+            lbl.setText(str(start + idx))
 
         for idx, cell in enumerate(self.cells):
             pos = start + idx
+            symbol = self.tape.tape.get(pos, self.tape.blank)
             cell.blockSignals(True)
-            cell.setText(self.tape.tape[pos])
+            cell.setText(symbol)
             cell.blockSignals(False)
             if pos == self.tape.head:
-                cell.setStyleSheet(
-                    "border:2px solid red; background-color: orange; font-size: 20px;"
-                )
+                cell.setStyleSheet("border:2px solid red; background-color: orange; font-size: 20px;")
             else:
-                cell.setStyleSheet(
-                    "border:1px solid black; font-size: 20px;"
-                )
+                cell.setStyleSheet("border:1px solid black; font-size: 20px;")
 
     def move_left(self):
         self.tape.move(Direction.LEFT)
@@ -113,23 +114,3 @@ class TapeWidget(QWidget):
     def move_right(self):
         self.tape.move(Direction.RIGHT)
         self.update_view()
-
-
-if __name__ == '__main__':
-    import sys
-
-    from PySide6.QtWidgets import QApplication, QMainWindow
-
-
-    class MainWindow(QMainWindow):
-        def __init__(self):
-            super().__init__()
-            self.setWindowTitle("Turing Tape Editor with Indices")
-            self.tape = TuringTape("1011_001")
-            self.tape_widget = TapeWidget(self.tape, window_size=5, cell_size=40)
-            self.setCentralWidget(self.tape_widget)
-
-    app = QApplication(sys.argv)
-    win = MainWindow()
-    win.show()
-    sys.exit(app.exec())

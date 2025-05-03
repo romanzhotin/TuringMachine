@@ -1,102 +1,57 @@
-from typing import Dict, Tuple, Set, Optional, cast
+from typing import Dict, Set, Tuple
 from core.tape import TuringTape, Direction
-
-
-Transition = Tuple[str, str, Direction]
 
 
 class TuringMachine:
     def __init__(
-        self,
-        tape: TuringTape,
-        states: Set[str],
-        input_alphabet: Set[str],
-        tape_alphabet: Set[str],
-        blank_symbol: str,
-        start_state: str,
-        accept_states: Set[str],
-        transitions: Dict[Tuple[str, str], Transition],
-        max_steps: Optional[int] = 1000
+            self,
+            initial_state: str,
+            final_states: Set[str],
+            transition_table: Dict[Tuple[str, str], Tuple[str, Direction, str]],
+            tape: TuringTape,
+            alphabet: Set[str],
+            max_steps: int = 1000
     ):
         self.tape = tape
-        self.states = states
-        self.input_alphabet = input_alphabet
-        self.tape_alphabet = tape_alphabet
-        self.blank_symbol = blank_symbol
-        self.start_state = start_state
-        self.current_state = start_state
-        self.accept_states = accept_states
-        self.transitions = transitions
+        self.current_state = initial_state
+        self.final_states = final_states
+        self.transition_table = transition_table
+        self.alphabet = alphabet
         self.max_steps = max_steps
-        self.step_count = 0
-
-    def reset(self, input_string: Optional[str] = None):
-        if input_string is not None:
-            self.tape.reset(input_string)
-        else:
-            self.tape.reset()
-        self.current_state = self.start_state
-        self.step_count = 0
+        self.is_halted = False
 
     def step(self) -> bool:
-        symbol = self.tape.read()
-        key = (self.current_state, symbol)
-        if key not in self.transitions:
+        if self.is_halted:
             return False
 
-        new_state, write_symbol, direction = self.transitions[key]
-        self.tape.write(write_symbol)
-        self.current_state = new_state
+        current_symbol = self.tape.read()
+        transition_key = (self.current_state, current_symbol)
+
+        if transition_key not in self.transition_table:
+            self.is_halted = True
+            return False
+
+        new_symbol, direction, new_state = self.transition_table[transition_key]
+        self.tape.write(new_symbol)
         self.tape.move(direction)
-        self.step_count += 1
+        self.current_state = new_state
+
+        if self.current_state in self.final_states:
+            self.is_halted = True
+
         return True
 
-    def run(self) -> bool:
-        while True:
-            if self.max_steps is not None and self.step_count >= self.max_steps:
-                break
-            if not self.step():
-                break
-        return self.current_state in self.accept_states
+    def run(self) -> None:
+        steps = 0
+        while not self.is_halted and steps < self.max_steps:
+            self.step()
+            steps += 1
 
-    @classmethod
-    def load_from_json(cls, json_data: dict) -> 'TuringMachine':
-        states = set(json_data['states'])
-        input_alphabet = set(json_data['input_alphabet'])
-        tape_alphabet = set(json_data['tape_alphabet'])
-        blank = json_data['blank_symbol']
-        start = json_data['start_state']
-        accept = set(json_data['accept_states'])
-        max_steps = json_data.get('max_steps', 1000)
+    def get_tape_snapshot(self, window: int = 10) -> str:
+        return self.tape.get_tape_snapshot(window)
 
-        # Разбор переходов
-        trans: Dict[Tuple[str, str], Transition] = {}
-        for key, val in json_data['transitions'].items():
-            st, sym = key.split(',')
-            new_st, write_sym, dir_str = val  # type: str, str, str
-            # Приведение типов для соответствия Transition
-            trans[(st, sym)] = cast(Transition, (new_st, write_sym, Direction[dir_str]))
+    def get_current_state(self) -> str:
+        return self.current_state
 
-        tape = TuringTape(json_data.get('tape', ''), blank)
-
-        return cls(
-            tape, states, input_alphabet, tape_alphabet,
-            blank, start, accept, trans, max_steps
-        )
-
-    def save_to_json(self) -> dict:
-        trans_dict: Dict[str, list] = {}
-        for (st, sym), (new_st, write_sym, direction) in self.transitions.items():
-            trans_dict[f"{st},{sym}"] = [new_st, write_sym, direction.name]
-
-        return {
-            'states': list(self.states),
-            'input_alphabet': list(self.input_alphabet),
-            'tape_alphabet': list(self.tape_alphabet),
-            'blank_symbol': self.blank_symbol,
-            'start_state': self.start_state,
-            'accept_states': list(self.accept_states),
-            'transitions': trans_dict,
-            'tape': str(self.tape),
-            'max_steps': self.max_steps
-        }
+    def get_tape_output(self) -> str:
+        return str(self.tape)

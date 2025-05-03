@@ -1,57 +1,66 @@
 import unittest
-from core.machine import TuringMachine, Direction
-from core.tape import TuringTape
+from core.tape import TuringTape, Direction
+from core.machine import TuringMachine
 
 
 class TestTuringMachine(unittest.TestCase):
-    def setUp(self):
-        self.states = {"q0", "q_accept"}
-        self.input_alphabet = {"a", "b"}
-        self.tape_alphabet = {"a", "b", "_"}
-        self.blank = "_"
-        self.start = "q0"
-        self.accept = {"q_accept"}
-
-    def test_run_simple(self):
+    def test_basic_transition(self):
+        tape = TuringTape('A')
         transitions = {
-            ('q0', 'a'): ('q0', 'b', Direction.RIGHT),
-            ('q0', 'b'): ('q0', 'a', Direction.RIGHT),
-            ('q0', '_'): ('q_accept', '_', Direction.STAY)
+            ('Start', 'A'): ('B', Direction.RIGHT, 'NextState')
         }
-        tape = TuringTape("ab", self.blank)
-        machine = TuringMachine(tape, self.states, self.input_alphabet,
-                                self.tape_alphabet, self.blank, self.start,
-                                self.accept, transitions)
-        result = machine.run()
+
+        tm = TuringMachine(
+            initial_state='Start',
+            final_states={'Halt'},
+            transition_table=transitions,
+            tape=tape,
+            alphabet={'A', 'B', '_'}
+        )
+
+        self.assertEqual(tm.get_current_state(), 'Start')
+        self.assertEqual(tape.read(), 'A')
+
+        result = tm.step()
+
         self.assertTrue(result)
-        self.assertEqual(tape.tape[0], 'b')
-        self.assertEqual(tape.tape[1], 'a')
+        self.assertEqual(tm.get_current_state(), 'NextState')
+        self.assertEqual(str(tape), 'B')
+        self.assertEqual(tape.read(), '_')
 
-    def test_halt_without_accept(self):
+    def test_final_state_halting(self):
+        tape = TuringTape('X')
         transitions = {
-            ('q0', 'a'): ('q0', 'a', Direction.RIGHT)
+            ('Init', 'X'): ('Y', Direction.LEFT, 'HALT')
         }
-        tape = TuringTape("a", self.blank)
-        machine = TuringMachine(tape, self.states, self.input_alphabet,
-                                self.tape_alphabet, self.blank, self.start,
-                                self.accept, transitions, max_steps=5)
-        result = machine.run()
+
+        tm = TuringMachine(
+            initial_state='Init',
+            final_states={'HALT'},
+            transition_table=transitions,
+            tape=tape,
+            alphabet={'X', 'Y', '_'}
+        )
+
+        tm.step()
+        self.assertTrue(tm.is_halted)
+        self.assertEqual(tm.get_current_state(), 'HALT')
+        self.assertEqual(str(tape), 'Y')
+
+    def test_no_transition_halting(self):
+        tape = TuringTape('0')
+        tm = TuringMachine(
+            initial_state='Unknown',
+            final_states={'End'},
+            transition_table={},
+            tape=tape,
+            alphabet={'0', '1', '_'}
+        )
+
+        result = tm.step()
         self.assertFalse(result)
-
-    def test_load_save_json(self):
-        transitions = {
-            ('q0', 'a'): ('q0', 'b', Direction.RIGHT),
-            ('q0', 'b'): ('q0', 'a', Direction.RIGHT),
-            ('q0', '_'): ('q_accept', '_', Diretion.STAY)
-        }
-        tape = TuringTape("ab", self.blank)
-        machine = TuringMachine(tape, self.states, self.input_alphabet,
-                                self.tape_alphabet, self.blank, self.start,
-                                self.accept, transitions)
-        json_data = machine.save_to_json()
-        new_machine = TuringMachine.load_from_json(json_data)
-        self.assertEqual(machine.states, new_machine.states)
-        self.assertEqual(machine.transitions, new_machine.transitions)
+        self.assertTrue(tm.is_halted)
+        self.assertEqual(tm.get_current_state(), 'Unknown')
 
 
 if __name__ == '__main__':
