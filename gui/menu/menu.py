@@ -20,6 +20,9 @@ class MainAppMenuBar(QMenuBar):
     # run_menu
     run_requested = Signal()
 
+    # options_menu
+    options_dialog_requested = Signal()
+
     # help_menu
     help_requested = Signal()
     about_dialog_requested = Signal()
@@ -31,6 +34,7 @@ class MainAppMenuBar(QMenuBar):
     def _setup_ui(self):
         self._create_file_menu()
         self._create_run_menu()
+        self._create_options_menu()
         self._create_help_menu()
 
     def _create_file_menu(self):
@@ -68,6 +72,22 @@ class MainAppMenuBar(QMenuBar):
             run_menu.addAction(action)
 
         self.addMenu(run_menu)
+
+    def _create_options_menu(self):
+        options_menu = QMenu('Опции', self)
+
+        actions = [
+            ('Настроить\t', QKeySequence(), self.options_dialog_requested )
+        ]
+
+        for text, shortcut, handler in actions:
+            action = QAction(text, self)
+            if shortcut:
+                action.setShortcut(shortcut)
+            action.triggered.connect(handler)
+            options_menu.addAction(action)
+
+        self.addMenu(options_menu)
 
     def _create_help_menu(self):
         help_menu = QMenu('Помощь', self)

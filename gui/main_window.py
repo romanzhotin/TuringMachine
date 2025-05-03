@@ -1,23 +1,28 @@
 import platform
 
 from pathlib import Path
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QVBoxLayout,
+    QHBoxLayout,
     QWidget
 )
+
+from core.tape import TuringTape
 from gui.dialogs.about_dialog import AboutDialog
 from gui.menu.menu import MainAppMenuBar
+from gui.widgets.alphabet_widget import AlphabetWidget
+from gui.widgets.notes_widget import NotesWidget
 from gui.widgets.tape_widget import TapeWidget
-from core.tape import TuringTape
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Turing Machine')
+        self.setWindowTitle('Машина Тьюринга')
+        self.setFocus()
         self._setup_ui()
         self._connect_menu_signals()
         self._apply_styles()
@@ -25,16 +30,28 @@ class MainWindow(QMainWindow):
     def _setup_ui(self):
         self.menu_bar = MainAppMenuBar(self)
         self.setMenuBar(self.menu_bar)
-
         self.statusBar().showMessage('')
 
         tape = TuringTape()
         self.tape_widget = TapeWidget(tape=tape, window_size=10, cell_size=50)
+        self.alphabet_widget = AlphabetWidget(width=self.tape_widget.calculate_fixed_size()[0])
+        self.notes_widget = NotesWidget()
 
         central = QWidget()
-        layout = QVBoxLayout()
-        layout.addWidget(self.tape_widget)
-        central.setLayout(layout)
+
+        layout_1 = QVBoxLayout()
+        layout_1.addWidget(self.tape_widget)
+        layout_1.addWidget(self.alphabet_widget)
+        layout_1.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+
+        layout_2 = QHBoxLayout()
+        layout_2.addLayout(layout_1)
+        layout_2.addWidget(self.notes_widget)
+
+        layout_3 = QVBoxLayout()
+        layout_3.addLayout(layout_2)
+
+        central.setLayout(layout_3)
         self.setCentralWidget(central)
 
     def _connect_menu_signals(self):
@@ -47,6 +64,9 @@ class MainWindow(QMainWindow):
 
         # run_menu
         self.menu_bar.run_requested.connect(self.run_program)
+
+        # opstions_menu
+        self.menu_bar.options_dialog_requested.connect(self.show_options_dialog)
 
         # help_menu
         self.menu_bar.help_requested.connect(self.help_show)
@@ -89,6 +109,10 @@ class MainWindow(QMainWindow):
     @Slot()
     def run_program(self):
         print('Программа запущена')
+
+    @Slot()
+    def show_options_dialog(self):
+        print('Настройки')
 
     @Slot()
     def help_show(self):
