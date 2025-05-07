@@ -19,6 +19,8 @@ class TuringMachine:
         self.alphabet = alphabet
         self.max_steps = max_steps
         self.is_halted = False
+        self.error_occurred = False  # Флаг ошибки
+        self.error_message = ""     # Сообщение об ошибке
 
     def step(self) -> bool:
         if self.is_halted:
@@ -29,6 +31,12 @@ class TuringMachine:
 
         if transition_key not in self.transition_table:
             self.is_halted = True
+            self.error_occurred = True
+            self.error_message = (
+                "Ошибка выполнения!\n"
+                f"Для состояния '{self.current_state}' и символа '{current_symbol}' "
+                "не найдено правило перехода в таблице."
+            )
             return False
 
         new_symbol, direction, new_state = self.transition_table[transition_key]

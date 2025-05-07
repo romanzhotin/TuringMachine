@@ -10,12 +10,18 @@ from PySide6.QtWidgets import (
     QWidget
 )
 
+from core.machine import TuringMachine
 from core.tape import TuringTape
+
 from gui.dialogs.about_dialog import AboutDialog
+from gui.dialogs.error_dialog import ErrorDialog
+
 from gui.menu.menu import MainAppMenuBar
+
 from gui.widgets.alphabet_widget import AlphabetWidget
 from gui.widgets.notes_widget import NotesWidget
 from gui.widgets.tape_widget import TapeWidget
+from gui.widgets.transition_table_widget import TransitionsTableWidget
 
 
 class MainWindow(QMainWindow):
@@ -40,6 +46,7 @@ class MainWindow(QMainWindow):
             window_size=10,
             cell_size=50
         )
+        self.transitions_table = TransitionsTableWidget(self.alphabet_widget)
         self.notes_widget = NotesWidget()
 
         central = QWidget()
@@ -47,19 +54,18 @@ class MainWindow(QMainWindow):
         layout_1 = QVBoxLayout()
         layout_1.addWidget(self.tape_widget)
         layout_1.addWidget(self.alphabet_widget)
+        layout_1.addWidget(self.transitions_table)
         layout_1.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
 
         layout_2 = QHBoxLayout()
         layout_2.addLayout(layout_1)
         layout_2.addWidget(self.notes_widget)
 
-        layout_3 = QVBoxLayout()
-        layout_3.addLayout(layout_2)
-
-        central.setLayout(layout_3)
+        central.setLayout(layout_2)
         self.setCentralWidget(central)
 
         self.tape_widget.error_message.connect(self.statusBar().showMessage)
+        self.alphabet_widget.text_processed.connect(self.transitions_table.update_alphabet)
 
     def _connect_menu_signals(self):
         # file_menu
@@ -117,7 +123,32 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def run_program(self):
-        print('Программа запущена')
+        try:
+            transitions = self.transitions_table.get_transitions()
+
+            if not transitions:
+                ErrorDialog("Нет переходов в таблице!", self).exec()
+                return
+
+            machine = TuringMachine(
+                initial_state="Q0",
+                final_states={"Qa"},
+                transition_table=transitions,
+                tape=self.tape_widget.tape,
+                alphabet=set(self.alphabet_widget.get_alphabet()),
+                max_steps=1000
+            )
+
+            machine.run()
+
+            if machine.error_occurred:
+                ErrorDialog(machine.error_message, self).exec()
+            else:
+                self.tape_widget.update_view()
+                self.statusBar().showMessage("Программа выполнена успешно")
+
+        except Exception as e:
+            ErrorDialog(f"Критическая ошибка: {str(e)}", self).exec()
 
     @Slot()
     def show_options_dialog(self):
