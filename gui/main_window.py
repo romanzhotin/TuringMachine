@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
             transitions = self.transitions_table.get_transitions()
 
             if not transitions:
-                ErrorDialog("Нет переходов в таблице!", self).exec()
+                ErrorDialog("Нет переходов в таблице!", self).show()
                 return
 
             machine = TuringMachine(
@@ -142,13 +142,13 @@ class MainWindow(QMainWindow):
             machine.run()
 
             if machine.error_occurred:
-                ErrorDialog(machine.error_message, self).exec()
+                ErrorDialog(machine.error_message, self).show()
             else:
                 self.tape_widget.update_view()
                 self.statusBar().showMessage("Программа выполнена успешно")
 
         except Exception as e:
-            ErrorDialog(f"Критическая ошибка: {str(e)}", self).exec()
+            ErrorDialog(f"Критическая ошибка: {str(e)}", self).show()
 
     @Slot()
     def show_options_dialog(self):

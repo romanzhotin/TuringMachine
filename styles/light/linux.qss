@@ -1,4 +1,3 @@
-/* Общий стиль для всей программы */
 QWidget {
     background-color: #f8f9fa;
     color: #212529;
@@ -6,11 +5,14 @@ QWidget {
     font-size: 16px;
 }
 
-/* Стиль кнопок */
+QLineEdit, QTextEdit, QLabel, QPushButton {
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+}
+
 QPushButton {
     background-color: #ffffff;
     border: 1px solid #ced4da;
-    border-radius: 6px; /* кнопки остаются скругленными */
+    border-radius: 6px;
     padding: 6px 12px;
 }
 QPushButton:hover {
@@ -20,26 +22,22 @@ QPushButton:pressed {
     background-color: #dee2e6;
 }
 
-/* Стиль текстовых полей */
-QLineEdit {
+QLineEdit, QTextEdit {
     background-color: #ffffff;
     border: 1px solid #ced4da;
-    border-radius: 0px; /* убрал скругление для всех QLineEdit */
+    border-radius: 0px;
     padding: 6px;
 }
 
-/* Стиль надписей */
 QLabel {
     color: #212529;
 }
 
-/* Статус-бар */
 QStatusBar {
     background-color: #f1f3f5;
     border-top: 1px solid #dee2e6;
 }
 
-/* Меню */
 QMenuBar {
     background-color: #f8f9fa;
     border: none;
@@ -53,7 +51,6 @@ QMenuBar::item:selected {
     background: #e9ecef;
 }
 
-/* Выпадающие меню */
 QMenu {
     background-color: #ffffff;
     border: 1px solid #ced4da;
@@ -62,14 +59,16 @@ QMenu::item:selected {
     background-color: #e9ecef;
 }
 
-/* Кнопки в TapeWidget */
 TapeWidget QPushButton {
     font-weight: bold;
 }
 
-/* Ячейки в TapeWidget */
 TapeWidget QLineEdit {
     font-size: 16px;
     font-weight: normal;
-    border-radius: 0px; /* Дополнительно фиксируем без скругления в TapeWidget */
+    border-radius: 0px;
+}
+
+QTableWidget, QHeaderView::section {
+    font-family: "Segoe UI", "DejaVu Sans", sans-serif;
 }

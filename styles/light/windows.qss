@@ -1,27 +1,74 @@
-QDialog {
-    background-color: #ffffff;
+QWidget {
+    background-color: #f8f9fa;
+    color: #212529;
+    font-family: "Segoe UI", "DejaVu Sans", sans-serif;
+    font-size: 16px;
 }
 
-QMainWindow {
+QLineEdit, QTextEdit, QLabel, QPushButton {
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+}
+
+QPushButton {
     background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+QPushButton:hover {
+    background-color: #e9ecef;
+}
+QPushButton:pressed {
+    background-color: #dee2e6;
+}
+
+QLineEdit, QTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 0px;
+    padding: 6px;
+}
+
+QLabel {
+    color: #212529;
+}
+
+QStatusBar {
+    background-color: #f1f3f5;
+    border-top: 1px solid #dee2e6;
 }
 
 QMenuBar {
-    background-color: #ffffff;
+    background-color: #f8f9fa;
+    border: none;
+}
+QMenuBar::item {
+    spacing: 3px;
+    padding: 6px 12px;
+    background: transparent;
+}
+QMenuBar::item:selected {
+    background: #e9ecef;
 }
 
 QMenu {
     background-color: #ffffff;
-    border: 1px solid #dcdcdc;
+    border: 1px solid #ced4da;
 }
-
-QMenu::item {
-    padding: 5px 20px;
-    background-color: #ffffff;
-    border: 1px solid #ffffff;
-}
-
 QMenu::item:selected {
-    background-color: #cce8ff;
-    border: 1px solid #99d1ff;
+    background-color: #e9ecef;
+}
+
+TapeWidget QPushButton {
+    font-weight: bold;
+}
+
+TapeWidget QLineEdit {
+    font-size: 16px;
+    font-weight: normal;
+    border-radius: 0px;
+}
+
+QTableWidget, QHeaderView::section {
+    font-family: "Segoe UI", "DejaVu Sans", sans-serif;
 }
