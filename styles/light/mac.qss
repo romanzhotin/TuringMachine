@@ -1,16 +1,16 @@
 /* -------------------------- */
-/*       windows.qss         */
+/*         mac.qss           */
 /* -------------------------- */
 
 QWidget {
     background-color: #f8f9fa;
     color: #212529;
-    font-family: "Segoe UI", "DejaVu Sans", sans-serif;
+    font-family: ".SF NS Text", "Helvetica Neue", "Segoe UI", "DejaVu Sans", sans-serif;
     font-size: 16px;
 }
 
 QLineEdit, QTextEdit, QLabel, QPushButton {
-    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-family: "Menlo", "Consolas", "Courier New", monospace;
     font-size: 16px;
 }
 
@@ -75,6 +75,6 @@ TapeWidget QLineEdit {
 }
 
 QTableWidget, QHeaderView::section {
-    font-family: "Segoe UI", "DejaVu Sans", sans-serif;
+    font-family: ".SF NS Text", "Helvetica Neue", "Segoe UI", "DejaVu Sans", sans-serif;
     font-size: 16px;
 }

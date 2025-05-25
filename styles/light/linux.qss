@@ -1,3 +1,7 @@
+/* -------------------------- */
+/*        linux.qss          */
+/* -------------------------- */
+
 QWidget {
     background-color: #f8f9fa;
     color: #212529;
@@ -7,6 +11,7 @@ QWidget {
 
 QLineEdit, QTextEdit, QLabel, QPushButton {
     font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 16px;
 }
 
 QPushButton {
@@ -71,4 +76,5 @@ TapeWidget QLineEdit {
 
 QTableWidget, QHeaderView::section {
     font-family: "Segoe UI", "DejaVu Sans", sans-serif;
+    font-size: 16px;
 }

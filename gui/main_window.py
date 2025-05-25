@@ -35,16 +35,16 @@ class MainWindow(QMainWindow):
         self._machine = None
         self._timer = QTimer(self)
         self._speed_delay = 400
+
         self._setup_ui()
         self._connect_menu_signals()
-        self._apply_styles()
 
         self._timer.timeout.connect(self._animate_step)
 
     def _setup_ui(self):
         self.menu_bar = MainAppMenuBar(self)
         self.setMenuBar(self.menu_bar)
-        self.statusBar().showMessage('')
+        self.statusBar().showMessage("")
 
         tape = TuringTape()
         self.alphabet_widget = AlphabetWidget(width=1050)
@@ -105,22 +105,6 @@ class MainWindow(QMainWindow):
         self.menu_bar.help_requested.connect(self.help_show)
         self.menu_bar.about_dialog_requested.connect(self.show_about_dialog)
 
-    def _apply_styles(self):
-        current_file = Path(__file__).resolve()
-        project_root = current_file.parent.parent
-        os_name = platform.system().lower()
-
-        if os_name == 'linux':
-            style_path = project_root / 'styles' / 'light' / 'linux.qss'
-        elif os_name == 'windows':
-            style_path = project_root / 'styles' / 'light' / 'windows.qss'
-        else:
-            return
-
-        with open(style_path, 'r', encoding='utf-8') as file:
-            style = file.read()
-            self.setStyleSheet(style)
-
     @Slot()
     def new_file(self):
         if self._timer.isActive():
@@ -139,15 +123,15 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def open_file(self):
-        print('Открытие файла')
+        print("Открытие файла")
 
     @Slot()
     def save_file(self):
-        print('Сохранение файла')
+        print("Сохранение файла")
 
     @Slot()
     def save_as_file(self):
-        print('Сохранение как')
+        print("Сохранение как")
 
     @Slot()
     def exit(self):
@@ -233,7 +217,7 @@ class MainWindow(QMainWindow):
             msg.exec()
 
             if msg.clickedButton() == btn_yes:
-                existing_text = self.alphabet_widget.input_field.text().replace(' ', '')
+                existing_text = self.alphabet_widget.input_field.text().replace(" ", "")
                 new_text = existing_text + "".join(sorted(missing))
                 self.alphabet_widget.input_field.setText(new_text)
                 self.alphabet_widget.text_processed.emit(new_text)
@@ -247,11 +231,11 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def show_options_dialog(self):
-        print('Настройки')
+        print("Настройки")
 
     @Slot()
     def help_show(self):
-        print('Справка о программе')
+        print("Справка о программе")
 
     @Slot()
     def show_about_dialog(self):
