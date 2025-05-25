@@ -1,7 +1,7 @@
 import platform
 
 from pathlib import Path
-from PySide6.QtCore import Slot, Qt
+from PySide6.QtCore import Slot, Qt, QTimer
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -26,15 +26,20 @@ from gui.widgets.notes_widget import NotesWidget
 from gui.widgets.tape_widget import TapeWidget
 from gui.widgets.transition_table_widget import TransitionsTableWidget
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Машина Тьюринга")
         self.setFocus()
         self._machine = None
+        self._timer = QTimer(self)
+        self._speed_delay = 400
         self._setup_ui()
         self._connect_menu_signals()
         self._apply_styles()
+
+        self._timer.timeout.connect(self._animate_step)
 
     def _setup_ui(self):
         self.menu_bar = MainAppMenuBar(self)
@@ -56,6 +61,7 @@ class MainWindow(QMainWindow):
 
         self.tape_input = QLineEdit()
         self.tape_input.setPlaceholderText("Введите начальную строку ленты (например: 0101)")
+        self.tape_input.returnPressed.connect(self._load_tape)
         btn_load = QPushButton("Загрузить на ленту")
         btn_load.clicked.connect(self._load_tape)
 
@@ -79,6 +85,7 @@ class MainWindow(QMainWindow):
 
         self.tape_widget.error_message.connect(self.statusBar().showMessage)
         self.alphabet_widget.text_processed.connect(self.transitions_table.update_alphabet)
+        self.menu_bar.speed_changed.connect(self._update_speed)
 
     def _connect_menu_signals(self):
         # file_menu
@@ -116,6 +123,8 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def new_file(self):
+        if self._timer.isActive():
+            self._timer.stop()
         self.tape_widget.tape.reset("")
         self.tape_widget.update_view()
         self.alphabet_widget.input_field.clear()
@@ -147,8 +156,10 @@ class MainWindow(QMainWindow):
     @Slot()
     def run_program(self):
         try:
-            transitions = self.transitions_table.get_transitions()
+            if self._timer.isActive():
+                self._timer.stop()
 
+            transitions = self.transitions_table.get_transitions()
             if not transitions:
                 ErrorDialog("Нет переходов в таблице!", self).show()
                 return
@@ -168,15 +179,40 @@ class MainWindow(QMainWindow):
                 max_steps=1000
             )
 
-            self._machine.run()
+            self.tape_widget.update_view()
+            self._timer.start(self._speed_delay)
 
+        except Exception as e:
+            ErrorDialog(f"Критическая ошибка: {str(e)}", self).show()
+
+    @Slot()
+    def _animate_step(self):
+        if not self._machine or self._machine.is_halted:
+            self._timer.stop()
+            if self._machine and self._machine.error_occurred:
+                ErrorDialog(self._machine.error_message, self).show()
+            elif self._machine and not self._machine.error_occurred:
+                self.statusBar().showMessage("Выполнение завершено")
+            return
+
+        current_state = self._machine.get_current_state()
+        current_symbol = self.tape_widget.tape.read()
+        self.transitions_table.highlight(current_state, current_symbol)
+
+        ok = self._machine.step()
+        self.tape_widget.update_view()
+        if not ok or self._machine.is_halted:
+            self._timer.stop()
             if self._machine.error_occurred:
                 ErrorDialog(self._machine.error_message, self).show()
             else:
-                self.tape_widget.update_view()
-                self.statusBar().showMessage("Программа выполнена успешно")
-        except Exception as e:
-            ErrorDialog(f"Критическая ошибка: {str(e)}", self).show()
+                self.statusBar().showMessage("Выполнение завершено")
+
+    @Slot(int)
+    def _update_speed(self, delay):
+        self._speed_delay = delay
+        if self._timer.isActive():
+            self._timer.setInterval(self._speed_delay)
 
     @Slot()
     def _load_tape(self):

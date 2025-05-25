@@ -1,13 +1,13 @@
 from PySide6.QtCore import Signal
 from PySide6.QtGui import (
     QAction,
+    QActionGroup,
     QKeySequence
 )
 from PySide6.QtWidgets import (
     QMenu,
     QMenuBar
 )
-
 
 class MainAppMenuBar(QMenuBar):
     # file_menu
@@ -27,6 +27,9 @@ class MainAppMenuBar(QMenuBar):
     help_requested = Signal()
     about_dialog_requested = Signal()
 
+    # speed_menu
+    speed_changed = Signal(int)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_ui()
@@ -35,6 +38,7 @@ class MainAppMenuBar(QMenuBar):
         self._create_file_menu()
         self._create_run_menu()
         self._create_options_menu()
+        self._create_speed_menu()
         self._create_help_menu()
 
     def _create_file_menu(self):
@@ -77,7 +81,7 @@ class MainAppMenuBar(QMenuBar):
         options_menu = QMenu('Опции', self)
 
         actions = [
-            ('Настроить\t', QKeySequence(), self.options_dialog_requested )
+            ('Настроить', QKeySequence(), self.options_dialog_requested)
         ]
 
         for text, shortcut, handler in actions:
@@ -89,12 +93,33 @@ class MainAppMenuBar(QMenuBar):
 
         self.addMenu(options_menu)
 
+    def _create_speed_menu(self):
+        speed_menu = QMenu('Скорость', self)
+        speeds = [
+            ('Очень быстро', 100),
+            ('Быстро', 200),
+            ('Средне', 400),
+            ('Медленно', 1000),
+            ('Очень медленно', 2000)
+        ]
+        group = QActionGroup(self)
+        group.setExclusive(True)
+        for text, delay in speeds:
+            action = QAction(text, self)
+            action.setCheckable(True)
+            action.triggered.connect(lambda checked, d=delay: self.speed_changed.emit(d))
+            group.addAction(action)
+            speed_menu.addAction(action)
+        default_action = speed_menu.actions()[2]
+        default_action.setChecked(True)
+        self.addMenu(speed_menu)
+
     def _create_help_menu(self):
         help_menu = QMenu('Помощь', self)
 
         actions = [
             ('Справка\tF1', QKeySequence('F1'), self.help_requested),
-            ('О программе\t', QKeySequence(), self.about_dialog_requested)
+            ('О программе', QKeySequence(), self.about_dialog_requested)
         ]
 
         for text, shortcut, handler in actions:

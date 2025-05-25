@@ -2,10 +2,12 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget, QTableWidget, QHeaderView, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
 from core.tape import Direction
 
+
 class CellEditor(QLineEdit):
     def __init__(self):
         super().__init__()
         self.setPlaceholderText("")
+
 
 class TransitionsTableWidget(QWidget):
     transition_changed = Signal(str, str, str, Direction, str)
@@ -17,6 +19,7 @@ class TransitionsTableWidget(QWidget):
         self.alphabet_widget = alphabet_widget
         self.base_states = ["Q0"]
         self.dynamic_states = []
+        self._highlighted = None
         self._setup_ui()
         self._connect_signals()
 
@@ -137,8 +140,35 @@ class TransitionsTableWidget(QWidget):
             symbol = self.table.verticalHeaderItem(r).text()
             for c, state in enumerate(self.base_states + self.dynamic_states):
                 editor = self.table.cellWidget(r, c)
-                if isinstance(editor, QLineEdit) and self._validate_input(editor.text().strip(), self.alphabet_widget.get_alphabet()):
+                if isinstance(editor, QLineEdit) and \
+                   self._validate_input(editor.text().strip(), self.alphabet_widget.get_alphabet()):
                     new_symbol, direction, target_state = self._parse_input(editor.text().strip())
                     current_state = state
                     transitions[(current_state, symbol)] = (new_symbol, direction, target_state)
         return transitions
+
+    def highlight(self, state: str, symbol: str):
+        if self._highlighted:
+            prev_r, prev_c = self._highlighted
+            prev_widget = self.table.cellWidget(prev_r, prev_c)
+            if prev_widget:
+                prev_widget.setStyleSheet("")
+
+        all_states = self.base_states + self.dynamic_states
+        try:
+            c = all_states.index(state)
+        except ValueError:
+            return
+
+        try:
+            r = [
+                self.table.verticalHeaderItem(i).text()
+                for i in range(self.table.rowCount())
+            ].index(symbol)
+        except ValueError:
+            return
+
+        widget = self.table.cellWidget(r, c)
+        if widget:
+            widget.setStyleSheet("background-color: #ff9999;")
+            self._highlighted = (r, c)
