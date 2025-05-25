@@ -7,7 +7,10 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
     QHBoxLayout,
-    QWidget
+    QWidget,
+    QLineEdit,
+    QPushButton,
+    QMessageBox
 )
 
 from core.machine import TuringMachine
@@ -23,12 +26,12 @@ from gui.widgets.notes_widget import NotesWidget
 from gui.widgets.tape_widget import TapeWidget
 from gui.widgets.transition_table_widget import TransitionsTableWidget
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Машина Тьюринга")
         self.setFocus()
+        self._machine = None
         self._setup_ui()
         self._connect_menu_signals()
         self._apply_styles()
@@ -51,7 +54,17 @@ class MainWindow(QMainWindow):
 
         central = QWidget()
 
+        self.tape_input = QLineEdit()
+        self.tape_input.setPlaceholderText("Введите начальную строку ленты (например: 0101)")
+        btn_load = QPushButton("Загрузить на ленту")
+        btn_load.clicked.connect(self._load_tape)
+
+        tape_control_layout = QHBoxLayout()
+        tape_control_layout.addWidget(self.tape_input)
+        tape_control_layout.addWidget(btn_load)
+
         layout_1 = QVBoxLayout()
+        layout_1.addLayout(tape_control_layout)
         layout_1.addWidget(self.tape_widget)
         layout_1.addWidget(self.alphabet_widget)
         layout_1.addWidget(self.transitions_table)
@@ -103,7 +116,17 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def new_file(self):
-        print('Создан новый файл')
+        self.tape_widget.tape.reset("")
+        self.tape_widget.update_view()
+        self.alphabet_widget.input_field.clear()
+        self.transitions_table.dynamic_states = []
+        self.transitions_table.base_states = ["Q0"]
+        self.transitions_table._update_columns()
+        self.transitions_table.update_alphabet()
+        self.notes_widget.task_edit.clear()
+        self.notes_widget.comments_edit.clear()
+        self.statusBar().showMessage("Новый файл создан")
+        self._machine = None
 
     @Slot()
     def open_file(self):
@@ -130,25 +153,61 @@ class MainWindow(QMainWindow):
                 ErrorDialog("Нет переходов в таблице!", self).show()
                 return
 
-            machine = TuringMachine(
+            alphabet = set(self.alphabet_widget.get_alphabet())
+            for (state, symbol), (new_symbol, direction, target_state) in transitions.items():
+                if symbol not in alphabet or new_symbol not in alphabet:
+                    ErrorDialog(f"Символ '{symbol}' или '{new_symbol}' не входит в алфавит!", self).show()
+                    return
+
+            self._machine = TuringMachine(
                 initial_state="Q0",
                 final_states={"Qa"},
                 transition_table=transitions,
                 tape=self.tape_widget.tape,
-                alphabet=set(self.alphabet_widget.get_alphabet()),
+                alphabet=alphabet,
                 max_steps=1000
             )
 
-            machine.run()
+            self._machine.run()
 
-            if machine.error_occurred:
-                ErrorDialog(machine.error_message, self).show()
+            if self._machine.error_occurred:
+                ErrorDialog(self._machine.error_message, self).show()
             else:
                 self.tape_widget.update_view()
                 self.statusBar().showMessage("Программа выполнена успешно")
-
         except Exception as e:
             ErrorDialog(f"Критическая ошибка: {str(e)}", self).show()
+
+    @Slot()
+    def _load_tape(self):
+        s = self.tape_input.text()
+        if not s:
+            self.statusBar().showMessage("Строка ленты пуста")
+            return
+
+        current_alphabet = set(self.alphabet_widget.get_alphabet())
+        tape_symbols = set(s)
+        missing = tape_symbols - current_alphabet
+        if missing:
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Недопустимые символы")
+            msg.setText(f"Символы {', '.join(missing)} отсутствуют в алфавите.\nДобавить их?")
+            btn_yes = msg.addButton("Да", QMessageBox.YesRole)
+            btn_no = msg.addButton("Нет", QMessageBox.NoRole)
+            msg.exec()
+
+            if msg.clickedButton() == btn_yes:
+                existing_text = self.alphabet_widget.input_field.text().replace(' ', '')
+                new_text = existing_text + "".join(sorted(missing))
+                self.alphabet_widget.input_field.setText(new_text)
+                self.alphabet_widget.text_processed.emit(new_text)
+            else:
+                self.statusBar().showMessage("Загрузка ленты отменена")
+                return
+
+        self.tape_widget.tape.reset(s)
+        self.tape_widget.update_view()
+        self.statusBar().showMessage(f"Лента загружена: '{s}'")
 
     @Slot()
     def show_options_dialog(self):

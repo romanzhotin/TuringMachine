@@ -1,7 +1,6 @@
 from typing import Dict, Set, Tuple
 from core.tape import TuringTape, Direction
 
-
 class TuringMachine:
     def __init__(
             self,
@@ -19,8 +18,10 @@ class TuringMachine:
         self.alphabet = alphabet
         self.max_steps = max_steps
         self.is_halted = False
-        self.error_occurred = False  # Флаг ошибки
-        self.error_message = ""     # Сообщение об ошибке
+        self.error_occurred = False
+        self.error_message = ""
+        self.steps_done = 0
+        self.trace = []
 
     def step(self) -> bool:
         if self.is_halted:
@@ -40,20 +41,26 @@ class TuringMachine:
             return False
 
         new_symbol, direction, new_state = self.transition_table[transition_key]
+        self.trace.append((self.current_state, current_symbol, new_symbol, direction, new_state))
+
         self.tape.write(new_symbol)
         self.tape.move(direction)
         self.current_state = new_state
 
+        self.steps_done += 1
+
         if self.current_state in self.final_states:
             self.is_halted = True
-
         return True
 
     def run(self) -> None:
-        steps = 0
-        while not self.is_halted and steps < self.max_steps:
+        while not self.is_halted and self.steps_done < self.max_steps:
             self.step()
-            steps += 1
+
+        if not self.is_halted and self.steps_done >= self.max_steps:
+            self.is_halted = True
+            self.error_occurred = True
+            self.error_message = f"Превышено максимальное число шагов ({self.max_steps})."
 
     def get_tape_snapshot(self, window: int = 10) -> str:
         return self.tape.get_tape_snapshot(window)

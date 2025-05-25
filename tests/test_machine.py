@@ -2,10 +2,9 @@ import unittest
 from core.tape import TuringTape, Direction
 from core.machine import TuringMachine
 
-
 class TestTuringMachine(unittest.TestCase):
     def test_basic_transition(self):
-        tape = TuringTape('A')
+        tape = TuringTape('A', '_')
         transitions = {
             ('Start', 'A'): ('B', Direction.RIGHT, 'NextState')
         }
@@ -29,7 +28,7 @@ class TestTuringMachine(unittest.TestCase):
         self.assertEqual(tape.read(), '_')
 
     def test_final_state_halting(self):
-        tape = TuringTape('X')
+        tape = TuringTape('X', '_')
         transitions = {
             ('Init', 'X'): ('Y', Direction.LEFT, 'HALT')
         }
@@ -48,7 +47,7 @@ class TestTuringMachine(unittest.TestCase):
         self.assertEqual(str(tape), 'Y')
 
     def test_no_transition_halting(self):
-        tape = TuringTape('0')
+        tape = TuringTape('0', '_')
         tm = TuringMachine(
             initial_state='Unknown',
             final_states={'End'},
@@ -61,7 +60,6 @@ class TestTuringMachine(unittest.TestCase):
         self.assertFalse(result)
         self.assertTrue(tm.is_halted)
         self.assertEqual(tm.get_current_state(), 'Unknown')
-
 
 if __name__ == '__main__':
     unittest.main()

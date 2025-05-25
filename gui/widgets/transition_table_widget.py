@@ -2,12 +2,10 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget, QTableWidget, QHeaderView, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
 from core.tape import Direction
 
-
 class CellEditor(QLineEdit):
     def __init__(self):
         super().__init__()
         self.setPlaceholderText("")
-
 
 class TransitionsTableWidget(QWidget):
     transition_changed = Signal(str, str, str, Direction, str)
@@ -62,11 +60,13 @@ class TransitionsTableWidget(QWidget):
                 editor = self.table.cellWidget(r, c)
                 if isinstance(editor, QLineEdit):
                     old_data[(state, symbol)] = editor.text()
+
         new_alphabet = self.alphabet_widget.get_alphabet()
         self._update_columns()
         self.table.clearContents()
         self.table.setRowCount(len(new_alphabet))
         self.table.setVerticalHeaderLabels(new_alphabet)
+
         for r, symbol in enumerate(new_alphabet):
             for c, state in enumerate(self.base_states + self.dynamic_states):
                 editor = CellEditor()
@@ -97,7 +97,9 @@ class TransitionsTableWidget(QWidget):
         text = editor.text().strip()
         symbol = self.table.verticalHeaderItem(row).text()
         current_state = self.table.horizontalHeaderItem(col).text()
-        if self._validate_input(text):
+        alphabet = self.alphabet_widget.get_alphabet()
+
+        if self._validate_input(text, alphabet):
             new_symbol, direction, target_state = self._parse_input(text)
             if target_state not in self.base_states + self.dynamic_states:
                 self.dynamic_states.append(target_state)
@@ -105,12 +107,17 @@ class TransitionsTableWidget(QWidget):
                 self.update_alphabet()
                 self.state_added.emit(target_state)
             self.transition_changed.emit(current_state, symbol, new_symbol, direction, target_state)
+            editor.setStyleSheet("")
+        else:
+            editor.setStyleSheet("background-color: #ffdddd;")
 
     @staticmethod
-    def _validate_input(text: str) -> bool:
+    def _validate_input(text: str, alphabet: list) -> bool:
         if len(text) < 3:
             return False
         if text[1] not in {'>', '<', '!'}:
+            return False
+        if text[0] not in alphabet:
             return False
         if not text[2:].isdigit() and text[2:] != "a":
             return False
@@ -118,7 +125,7 @@ class TransitionsTableWidget(QWidget):
 
     @staticmethod
     def _parse_input(text: str):
-        new_symbol = text[0].replace('_', ' ')
+        new_symbol = text[0]
         direction = {'>': Direction.RIGHT, '<': Direction.LEFT, '!': Direction.STAY}[text[1]]
         suffix = text[2:]
         target_state = f"Q{suffix}" if suffix != 'a' else 'Qa'
@@ -130,8 +137,8 @@ class TransitionsTableWidget(QWidget):
             symbol = self.table.verticalHeaderItem(r).text()
             for c, state in enumerate(self.base_states + self.dynamic_states):
                 editor = self.table.cellWidget(r, c)
-                if isinstance(editor, QLineEdit) and self._validate_input(editor.text()):
-                    new_symbol, direction, target_state = self._parse_input(editor.text())
+                if isinstance(editor, QLineEdit) and self._validate_input(editor.text().strip(), self.alphabet_widget.get_alphabet()):
+                    new_symbol, direction, target_state = self._parse_input(editor.text().strip())
                     current_state = state
                     transitions[(current_state, symbol)] = (new_symbol, direction, target_state)
         return transitions

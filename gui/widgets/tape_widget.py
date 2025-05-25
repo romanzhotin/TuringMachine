@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
 )
 from core.tape import TuringTape, Direction
 
-
 class Cell(QLineEdit):
     def __init__(self, idx, tape_widget):
         super().__init__(tape_widget.tape.blank)
@@ -22,9 +21,7 @@ class Cell(QLineEdit):
 
     def keyPressEvent(self, event):
         key = event.text()
-        # if key == ' ' and not event.modifiers():
-        #     key = self.tape_widget.tape.blank
-        if key and not event.modifiers():
+        if key:
             alphabet = self.tape_widget.alphabet_widget.get_alphabet()
             if key not in alphabet:
                 self.tape_widget.error_message.emit(f"Символ '{key}' не входит в алфавит")
@@ -37,8 +34,15 @@ class Cell(QLineEdit):
             else:
                 self.tape_widget.tape.set_symbol(pos, key)
         else:
-            super().keyPressEvent(event)
-
+            if event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete):
+                pos = self.tape_widget.tape.head - self.tape_widget.window + self.idx
+                if pos == self.tape_widget.tape.head:
+                    self.tape_widget.tape.write(self.tape_widget.tape.blank)
+                else:
+                    self.tape_widget.tape.set_symbol(pos, self.tape_widget.tape.blank)
+                self.setText("")
+            else:
+                super().keyPressEvent(event)
 
 class TapeWidget(QWidget):
     error_message = Signal(str)
@@ -82,8 +86,8 @@ class TapeWidget(QWidget):
         main_layout.addLayout(tape_layout)
 
         btn_layout = QHBoxLayout()
-        btn_left = QPushButton("<-")
-        btn_right = QPushButton("->")
+        btn_left = QPushButton("⬅")
+        btn_right = QPushButton("➡")
         btn_left.setFixedSize(self.cell_size * self.window, self.cell_size)
         btn_right.setFixedSize(self.cell_size * self.window, self.cell_size)
         btn_left.clicked.connect(self.move_left)
@@ -108,8 +112,9 @@ class TapeWidget(QWidget):
         for idx, cell in enumerate(self.cells):
             pos = start + idx
             symbol = self.tape.tape.get(pos, self.tape.blank)
+            display = "" if symbol == "_" else symbol
             cell.blockSignals(True)
-            cell.setText(symbol)
+            cell.setText(display)
             cell.blockSignals(False)
             if pos == self.tape.head:
                 cell.setStyleSheet("border:2px solid #ff6666; background-color: #ff9999; font-size: 20px;")

@@ -1,7 +1,6 @@
 import unittest
 from core.tape import TuringTape, Direction
 
-
 class TestTuringTape(unittest.TestCase):
     def test_initialization(self):
         tape = TuringTape("abc", "_")
@@ -26,7 +25,6 @@ class TestTuringTape(unittest.TestCase):
         snapshot = tape.get_tape_snapshot(window=2)
         self.assertIn("[a]", snapshot)
         self.assertIn("b", snapshot)
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,7 +1,6 @@
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit
 
-
 class AlphabetWidget(QWidget):
     text_processed = Signal(str)
 
@@ -34,4 +33,7 @@ class AlphabetWidget(QWidget):
         self.text_processed.emit(res)
 
     def get_alphabet(self):
-        return sorted(list(set(self.input_field.text()))) + [' ']
+        letters = sorted(list(set(self.input_field.text().replace(' ', ''))))
+        if "_" not in letters:
+            letters.append("_")
+        return letters
