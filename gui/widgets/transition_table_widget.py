@@ -28,8 +28,8 @@ class TransitionsTableWidget(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.AllEditTriggers)
 
-        self.add_btn = QPushButton("Add State")
-        self.remove_btn = QPushButton("Remove State")
+        self.add_btn = QPushButton("Добавить состояние")
+        self.remove_btn = QPushButton("Удалить состояние")
 
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(self.add_btn)
